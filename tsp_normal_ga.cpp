@@ -1,7 +1,8 @@
 #include "allinc.h"
 #include <math.h>
+#include <algorithm>
+#include <iterator>
 using namespace std;
-//City map[V];
 
 
 
@@ -26,6 +27,20 @@ bool inList(Individual a, char city)
 {
 	for (int n=0; n<V; n++) if (a.route[n]==city) return true;
 	return false;
+}
+
+//Function to determine if a sequence is already in the population
+bool inPop(Population &p, Individual a){
+	
+	for(int i = 0; i<POP_SIZE; i++){
+		if (equal(begin(p.pop[i].route), end(p.pop[i].route), begin(a.route), end(a.route))){
+			return true;
+		}else{
+			continue;
+		}
+	}
+	return false;
+
 }
 
 Individual crossoverPm (Individual a, Individual b)
@@ -159,8 +174,8 @@ int fitness(Individual a)
 		f += map_copy[a.route[i] - 65][a.route[i + 1] - 65];
 
 		//Set to INT_MAX all road to current city
-		// for(int j=0;j<V;j++)
-		// 	map_copy[j][a.route[i] - 65]=INT_MAX;
+		for(int j=0;j<V;j++)
+		map_copy[j][a.route[i] - 65]=INT_MAX;
 		
 	}
 	a.fitness = f + return_distance;
@@ -214,7 +229,6 @@ void printPop(Population p)
 void evolve(Population &p)
 {
 	mutatePop(p);
-	//printPop(p);
 
 	Individual offspring[POP_SIZE/2];
 	Individual winners[TOURN_N];
@@ -227,18 +241,16 @@ void evolve(Population &p)
 		if (SELECTION_TYPE==0)
 		//FIXED RANK SELECTION
 		{
-			for (int i=0; i<POP_SIZE/2; i++)
-			{
+			for (int i=0; i<POP_SIZE/2; i++){
 				int flip = rand()%2;
 				if (flip==0) offspring[i]=crossoverInj (p.pop[i+1], p.pop[i]); else
 						offspring[i]=crossoverPm (p.pop[i], p.pop[i+1]);
 			}
-	        } else if (SELECTION_TYPE==1)
+	    } else if (SELECTION_TYPE==1)
 		//TOURNAMENT SELECTION
 		{
 			for (int i=0; i<POP_SIZE/2; i++)
 			{
-
 				for (int j=0; j<=TOURN_N; j++)
 				{
 					winners[j]=p.pop[rand()%(POP_SIZE)];
@@ -268,19 +280,16 @@ void evolve(Population &p)
 
 		}
 		sort(p);
+		
 
-
-			for (int i=0; i<POP_SIZE/2; i++)
-			{
-				for (int j=0; j<POP_SIZE/2; j++)
-				{
-					if (fitness(offspring[i]) < fitness(p.pop[j]))
-					{
-						p.pop[j]=offspring[i];
-
-					}
+		for (int i=0; i<POP_SIZE/2; i++){
+			for (int j=0; j<POP_SIZE; j++){
+				if (fitness(offspring[i]) < fitness(p.pop[j]) && !inPop(p,offspring[i])){
+					p.pop[j]=offspring[i];
+					break;
 				}
 			}
+		}
 
 
 
