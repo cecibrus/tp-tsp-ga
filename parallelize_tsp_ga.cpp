@@ -348,7 +348,7 @@ int main()
 	cout << "Initial sorted population: " << endl;
 	printPop(population1);
 	cout << endl << "Starting evolution..." << endl << endl;
-    //#pragma omp for 
+    //#pragma omp parallel 
 
 	evolve(population1);
 
