@@ -236,6 +236,8 @@ void evolve(Population &p)
 	Individual temp;
 	int g=0;
 	int c=0;
+
+	#	pragma omp parallel
 	while (g<GENERATIONS)
 	{
 
@@ -348,8 +350,8 @@ int main()
 	cout << "Initial sorted population: " << endl;
 	printPop(population1);
 	cout << endl << "Starting evolution..." << endl << endl;
-    //#pragma omp parallel 
-
+    
+	#	pragma omp parallel num_threads(thread_count)
 	evolve(population1);
 
 	return 0;
