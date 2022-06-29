@@ -1,4 +1,4 @@
-#include "allinc6.h"
+#include "allinc.h"
 #include <math.h>
 #include <algorithm>
 #include <iterator>
@@ -20,7 +20,6 @@ void sort(Population &p);
 void printInd(Individual a);
 void printPop(Population p);
 void evolve(Population &p);
-
 // =============================================================================
 // EVOLUTION
 
@@ -315,7 +314,13 @@ void evolve(Population &p)
 int main()
 {
 	srand(time(NULL));
-
+	int my_rank = 0;
+	int my_thread_count = 0;
+	int thread_count = 10;
+	clock_t start, end;
+ 	/* Recording the starting clock tick.*/
+    start = clock();
+	
 	//Population is created
 	Population population1;
 	Individual indi[POP_SIZE];
@@ -324,8 +329,7 @@ int main()
 	//for (int i=1; i<=V; i++) catalog[i]=i;
 
 	//gnomes are filled with '0's for all individuals
-	#	pragma omp parallel num_threads(thread_count)
-	#	pragma omp for
+	//#	pragma omp for
 	for (int k=0; k<POP_SIZE; k++)
 	{
 		for (int j=0; j<V; j++) indi[k].route[j]='0';
@@ -355,10 +359,21 @@ int main()
 	cout << endl << "Starting evolution..." << endl << endl;
     
 	#	pragma omp parallel num_threads(thread_count)
-	int my_rank = omp_get_thread_num();
-	int my_thread_count = omp_get_num_threads();
-	print("Thread: %d/%d",my_rank,my_thread_count);
+	my_rank = omp_get_thread_num();
+	my_thread_count = omp_get_num_threads();
+
+	printf("Thread: \n%d/%d\n",my_thread_count, my_rank);
 	evolve(population1);
 
+  
+  
+    // Recording the end clock tick.
+    end = clock();
+  
+    // Calculating total time taken by the program.
+    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+    cout << "Time taken by program is : " << fixed 
+         << time_taken ;
+    cout << " sec " << endl;
 	return 0;
 }
