@@ -21,6 +21,7 @@ void printInd(Individual a);
 void printPop(Population p);
 void evolve(Population &p);
 
+int NUM_THREADS = 4;
 // =============================================================================
 // EVOLUTION
 
@@ -319,7 +320,7 @@ void evolve(Population &p)
 int main()
 {
 	srand(time(NULL));
-	omp_set_num_threads(4);
+	omp_set_num_threads(NUM_THREADS);
 
 	//Population is created
 	Population population1;
