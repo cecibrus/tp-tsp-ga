@@ -147,6 +147,7 @@ void mutate(Individual &a)
 void mutatePop(Population &p)
 {
 	int flip;
+	#	pragma omp for
 	for (int i=0; i<POP_SIZE; i++)
 	{
 		if (MUTATION_TYPE==0) mutate(p.pop[i]); else mutateW(p.pop[i]);
@@ -324,9 +325,7 @@ int main()
 	//Population is created
 	Population population1;
 	Individual indi[POP_SIZE];
-	//int catalog[50];
 	char ins;
-	//for (int i=1; i<=V; i++) catalog[i]=i;
 
 	//gnomes are filled with '0's for all individuals
 	//#	pragma omp for
@@ -350,7 +349,7 @@ int main()
 		}
 
 	}
-
+	# pragma omp parallel
 	for (int r=0; r<POP_SIZE; r++) population1.pop[r]=indi[r];
 
 	sort(population1);
