@@ -315,10 +315,10 @@ int main()
 	//Population is created
 	Population population1;
 	Individual indi[POP_SIZE];
-	//int catalog[50];
 	char ins;
-	//for (int i=1; i<=V; i++) catalog[i]=i;
-
+	clock_t start, end;
+ 	/* Recording the starting clock tick.*/
+    start = clock();
 	//gnomes are filled with '0's for all individuals
 	for (int k=0; k<POP_SIZE; k++)
 	{
@@ -349,5 +349,13 @@ int main()
 	cout << endl << "Starting evolution..." << endl << endl;
 	evolve(population1);
 
+    // Recording the end clock tick.
+    end = clock();
+  
+    // Calculating total time taken by the program.
+    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
+    cout << "Time taken by program is : " << fixed 
+         << time_taken ;
+    cout << " sec " << endl;
 	return 0;
 }
