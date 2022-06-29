@@ -1,4 +1,4 @@
-#include "allinc29.h"
+#include "allinc6.h"
 #include <math.h>
 #include <algorithm>
 #include <iterator>
@@ -237,13 +237,13 @@ void evolve(Population &p)
 	int g=0;
 	int c=0;
 
-	#	pragma omp parallel
 	while (g<GENERATIONS)
 	{
 
 		if (SELECTION_TYPE==0)
 		//FIXED RANK SELECTION
 		{
+			#	pragma omp for
 			for (int i=0; i<POP_SIZE/2; i++){
 				int flip = rand()%2;
 				if (flip==0) offspring[i]=crossoverInj (p.pop[i+1], p.pop[i]); else
@@ -254,6 +254,7 @@ void evolve(Population &p)
 		{
 			for (int i=0; i<POP_SIZE/2; i++)
 			{
+				#	pragma omp for
 				for (int j=0; j<=TOURN_N; j++)
 				{
 					winners[j]=p.pop[rand()%(POP_SIZE)];
@@ -284,7 +285,7 @@ void evolve(Population &p)
 		}
 		sort(p);
 		
-
+		#	pragma omp for
 		for (int i=0; i<POP_SIZE/2; i++){
 			for (int j=0; j<POP_SIZE; j++){
 				if (fitness(offspring[i]) < fitness(p.pop[j]) && !inPop(p,offspring[i])){
@@ -323,6 +324,8 @@ int main()
 	//for (int i=1; i<=V; i++) catalog[i]=i;
 
 	//gnomes are filled with '0's for all individuals
+	#	pragma omp parallel num_threads(thread_count)
+	#	pragma omp for
 	for (int k=0; k<POP_SIZE; k++)
 	{
 		for (int j=0; j<V; j++) indi[k].route[j]='0';
@@ -352,6 +355,9 @@ int main()
 	cout << endl << "Starting evolution..." << endl << endl;
     
 	#	pragma omp parallel num_threads(thread_count)
+	int my_rank = omp_get_thread_num();
+	int my_thread_count = omp_get_num_threads();
+	print("Thread: %d/%d",my_rank,my_thread_count);
 	evolve(population1);
 
 	return 0;
