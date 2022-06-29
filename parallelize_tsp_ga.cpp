@@ -1,4 +1,4 @@
-#include "allinc.h"
+#include "allinc15.h"
 #include <math.h>
 #include <algorithm>
 #include <iterator>
@@ -20,6 +20,7 @@ void sort(Population &p);
 void printInd(Individual a);
 void printPop(Population p);
 void evolve(Population &p);
+
 // =============================================================================
 // EVOLUTION
 
@@ -57,7 +58,9 @@ Individual crossoverPm (Individual a, Individual b)
 	}
 
 	Individual c;
-	for (int n=0; n<V; n++) c.route[n]='0';
+	# pragma omp for
+    for (int n=0; n<V; n++) c.route[n]='0';
+    # pragma omp for
 	for (int n=x; n<=y; n++) c.route[n]=a.route[n];
 
 		for (int i=0; i<V; i++)
@@ -88,10 +91,13 @@ Individual crossoverInj (Individual a, Individual b)
 	}
 
 	Individual c;
+	#	pragma omp for
 	for (int n=0; n<V; n++) c.route[n]='0';
 
 	Individual ab;
+	#	pragma omp for
 	for (int n=0; n<V; n++) ab.route[n]='0';
+	#	pragma omp for
 	for (int n=x; n<=y; n++) ab.route[n]=a.route[n];
 
 	for (int n=0; n<=q; n++)
@@ -147,7 +153,6 @@ void mutate(Individual &a)
 void mutatePop(Population &p)
 {
 	int flip;
-	#	pragma omp for
 	for (int i=0; i<POP_SIZE; i++)
 	{
 		if (MUTATION_TYPE==0) mutate(p.pop[i]); else mutateW(p.pop[i]);
@@ -236,7 +241,6 @@ void evolve(Population &p)
 	Individual temp;
 	int g=0;
 	int c=0;
-
 	while (g<GENERATIONS)
 	{
 
@@ -252,9 +256,9 @@ void evolve(Population &p)
 	    } else if (SELECTION_TYPE==1)
 		//TOURNAMENT SELECTION
 		{
+			#	pragma omp for
 			for (int i=0; i<POP_SIZE/2; i++)
 			{
-				#	pragma omp for
 				for (int j=0; j<=TOURN_N; j++)
 				{
 					winners[j]=p.pop[rand()%(POP_SIZE)];
@@ -285,7 +289,7 @@ void evolve(Population &p)
 		}
 		sort(p);
 		
-		#	pragma omp for
+		#	pragma omf for
 		for (int i=0; i<POP_SIZE/2; i++){
 			for (int j=0; j<POP_SIZE; j++){
 				if (fitness(offspring[i]) < fitness(p.pop[j]) && !inPop(p,offspring[i])){
@@ -315,24 +319,20 @@ void evolve(Population &p)
 int main()
 {
 	srand(time(NULL));
-	int my_rank = 0;
-	int my_thread_count = 0;
-	int thread_count = 10;
-	clock_t start, end;
- 	/* Recording the starting clock tick.*/
-    start = clock();
-	
+	omp_set_num_threads(4);
+
 	//Population is created
 	Population population1;
 	Individual indi[POP_SIZE];
 	char ins;
-
+	clock_t start, end;
+ 	/* Recording the starting clock tick.*/
+    start = clock();
 	//gnomes are filled with '0's for all individuals
-	//#	pragma omp for
 	for (int k=0; k<POP_SIZE; k++)
 	{
+		# pragma omp for
 		for (int j=0; j<V; j++) indi[k].route[j]='0';
-
 	}
 
 	//here is where the real initial population is created randomly
@@ -349,23 +349,16 @@ int main()
 		}
 
 	}
-	# pragma omp parallel
+
+	# pragma omp for
 	for (int r=0; r<POP_SIZE; r++) population1.pop[r]=indi[r];
 
 	sort(population1);
 	cout << "Initial sorted population: " << endl;
 	printPop(population1);
 	cout << endl << "Starting evolution..." << endl << endl;
-    
-	#	pragma omp parallel num_threads(thread_count)
-	my_rank = omp_get_thread_num();
-	my_thread_count = omp_get_num_threads();
-
-	printf("Thread: \n%d/%d\n",my_thread_count, my_rank);
 	evolve(population1);
 
-  
-  
     // Recording the end clock tick.
     end = clock();
   
