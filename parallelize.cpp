@@ -1,15 +1,14 @@
 #include "allinc.h"
 #include <math.h>
-#include <algorithm>
-#include <iterator>
+#include <limits.h>
+#include <omp.h>
 using namespace std;
-
-City map[V];
+City map[CITIES];
 
 //==============================================================================
 // PROTOTYPES
 
-bool inList(Individual a, char city);
+bool inList(Individual a, int city);
 Individual crossoverPm (Individual a, Individual b);
 void mutateW(Individual &a);
 void mutate(Individual &a);
@@ -22,33 +21,21 @@ void evolve(Population &p);
 
 // =============================================================================
 // EVOLUTION
+int thread_count = 8;
 
-bool inList(Individual a, char city)
+
+bool inList(Individual a, int city)
 {
-	for (int n=0; n<V; n++) if (a.route[n]==city) return true;
+	for (int n=0; n<CITIES; n++) if (a.route[n]==city) return true;
 	return false;
-}
-
-//Function to determine if a sequence is already in the population
-bool inPop(Population &p, Individual a){
-	
-	for(int i = 0; i<POP_SIZE; i++){
-		if (equal(begin(p.pop[i].route), end(p.pop[i].route), begin(a.route), end(a.route))){
-			return true;
-		}else{
-			continue;
-		}
-	}
-	return false;
-
 }
 
 Individual crossoverPm (Individual a, Individual b)
 {
-	int x = rand()%V;
-	if (x>V/2) x=x-V/4;
-	int y = rand()%V;
-	if (y<V/2) y=y+V/4;
+	int x = rand()%CITIES;
+	if (x>CITIES/2) x=x-CITIES/4;
+	int y = rand()%CITIES;
+	if (y<CITIES/2) y=y+CITIES/4;
 	if (x>y)
 	{
 		int temp = x;
@@ -57,14 +44,14 @@ Individual crossoverPm (Individual a, Individual b)
 	}
 
 	Individual c;
-	for (int n=0; n<V; n++) c.route[n]='0';
+	for (int n=0; n<CITIES; n++) c.route[n]=-1;
 	for (int n=x; n<=y; n++) c.route[n]=a.route[n];
 
-		for (int i=0; i<V; i++)
+		for (int i=0; i<CITIES; i++)
 		{
-			if (c.route[i]=='0')
+			if (c.route[i]==-1)
 			{
-				for (int k=0; k<V; k++) if (!inList (c, a.route[k])) c.route[i]=a.route[k];
+				for (int k=0; k<CITIES; k++) if (!inList (c, a.route[k])) c.route[i]=a.route[k];
 			}
 		}
 
@@ -74,12 +61,12 @@ Individual crossoverPm (Individual a, Individual b)
 
 Individual crossoverInj (Individual a, Individual b)
 {
-	int q = rand()%V/3;
+	int q = rand()%CITIES/3;
 
-	int x = rand()%V;
-	if (x>V/2) x=x-V/4;
-	int y = rand()%V;
-	if (y<V/2) y=y+V/4;
+	int x = rand()%CITIES;
+	if (x>CITIES/2) x=x-CITIES/4;
+	int y = rand()%CITIES;
+	if (y<CITIES/2) y=y+CITIES/4;
 	if (x>y)
 	{
 		int temp = x;
@@ -88,10 +75,13 @@ Individual crossoverInj (Individual a, Individual b)
 	}
 
 	Individual c;
-	for (int n=0; n<V; n++) c.route[n]='0';
+	//#	pragma omp for
+	for (int n=0; n<CITIES; n++) c.route[n]=-1;
 
 	Individual ab;
-	for (int n=0; n<V; n++) ab.route[n]='0';
+	//#	pragma omp for
+	for (int n=0; n<CITIES; n++) ab.route[n]=-1;
+	//#	pragma omp for
 	for (int n=x; n<=y; n++) ab.route[n]=a.route[n];
 
 	for (int n=0; n<=q; n++)
@@ -101,11 +91,11 @@ Individual crossoverInj (Individual a, Individual b)
 
 	for (int h=q+1; h<(y-x); h++) c.route[h]=a.route[h];
 
-		for (int i=0; i<V; i++)
+		for (int i=0; i<CITIES; i++)
 		{
-			if (c.route[i]=='0')
+			if (c.route[i]==-1)
 			{
-				for (int k=0; k<V; k++) if (!inList (c, a.route[k])) c.route[i]=a.route[k];
+				for (int k=0; k<CITIES; k++) if (!inList (c, a.route[k])) c.route[i]=a.route[k];
 			}
 		}
 
@@ -117,7 +107,7 @@ void mutateW(Individual &a)
 	Individual candidate = a;
 	for (int i=0; i<MUTATEW_POINTS; i++)
 	{
-		int k=rand()%(V-1)+1;
+		int k=rand()%(CITIES-1)+1;
 		int temp=candidate.route[0];
 		candidate.route[0]=candidate.route[k];
 		candidate.route[k]=temp;
@@ -131,8 +121,8 @@ void mutate(Individual &a)
 	Individual candidate = a;
 	for (int i=0; i<MUTATE_POINTS; i++)
 	{
-		int q = rand()%V;
-		int d = rand()%V;
+		int q = rand()%CITIES;
+		int d = rand()%CITIES;
 		int chance = rand()%2;
 		if (chance==1)
 		{
@@ -153,54 +143,25 @@ void mutatePop(Population &p)
 	}
 }
 
-// int fitness(Individual a)
-// {
-// 	int map_copy[V][V];
-// 	memcpy(map_copy,map, V*V*sizeof(int));
-
-// 	//Calculate the distance between the last city and the first city
-// 	int return_distance=map_copy[a.route[V-1] - 65][a.route[0] - 65];
-// 	if(return_distance == INT_MAX)
-// 		return INT_MAX;
-// 	int f = 0;
-// 	for (int i = 0; i < V - 1; i++) {
-// 		//Misma ciudad
-// 		if(a.route[i + 1] - 65 == a.route[i] - 65 )
-// 			return INT_MAX;
-
-// 		if (map_copy[a.route[i] - 65][a.route[i + 1] - 65] == INT_MAX)
-// 			return INT_MAX;
-
-// 		f += map_copy[a.route[i] - 65][a.route[i + 1] - 65];
-
-// 		//Set to INT_MAX all road to current city
-// 		for(int j=0;j<V;j++)
-// 		map_copy[j][a.route[i] - 65]=INT_MAX;
-		
-// 	}
-// 	a.fitness = f + return_distance;
-// 	return f + return_distance;
-// }
-
 int fitness(Individual a)
 {
 
-	int xd = 0;
-	int yd = 0;
-	int d = 0;
-	for (int i = 0; i < V - 1; i++)
+	int xd=0;
+	int yd=0;
+	int d=0;
+	for (int i=0; i<CITIES-1; i++)
 	{
-		xd = map[a.route[i]].x - map[a.route[i + 1]].x;
-		yd = map[a.route[i]].y - map[a.route[i + 1]].y;
-		d = d + (int)(sqrt(xd * xd + yd * yd) + 0.5);
+		xd = map[a.route[i]].x - map[a.route[i+1]].x;
+		yd = map[a.route[i]].y - map[a.route[i+1]].y;
+		 d = d+(int)(sqrt(xd*xd + yd*yd)+0.5);
+
 	}
-	xd = map[a.route[V - 1]].x - map[a.route[0]].x;
-	yd = map[a.route[V - 1]].y - map[a.route[0]].y;
-	d = d + (int)(sqrt(xd * xd + yd * yd) + 0.5);
+	xd=map[a.route[CITIES-1]].x - map[a.route[0]].x;
+	yd=map[a.route[CITIES-1]].y - map[a.route[0]].y;
+	d = d+(int)(sqrt(xd*xd + yd*yd)+0.5);
 
 	return d;
 }
-
 
 void sort(Population &p)
 {
@@ -208,7 +169,7 @@ void sort(Population &p)
 	Individual temp;
 	while (c<SORT_LIMIT)
 	{
-		for (int i=0; i<(POP_SIZE - 1); i++)
+		for (int i=0; i<POP_SIZE-1; i++)
 		{
 			if (fitness(p.pop[i]) > fitness(p.pop[i+1]))
 			{
@@ -223,9 +184,9 @@ void sort(Population &p)
 
 int getFreeIndex(Individual a)
 {
-	for (int i=0; i<V; i++)
+	for (int i=0; i<CITIES; i++)
 	{
-		if (a.route[i]=='0') return i;
+		if (a.route[i]==-1) return i;
 	}
 	return -1;
 }
@@ -233,7 +194,7 @@ int getFreeIndex(Individual a)
 void printInd(Individual a)
 {
 
-	for (int i=0; i<V; i++) cout << a.route[i] << "->";
+	for (int i=0; i<CITIES; i++) cout << a.route[i] << "->";
 
 }
 
@@ -249,6 +210,7 @@ void printPop(Population p)
 void evolve(Population &p)
 {
 	mutatePop(p);
+	//printPop(p);
 
 	Individual offspring[POP_SIZE/2];
 	Individual winners[TOURN_N];
@@ -261,16 +223,20 @@ void evolve(Population &p)
 		if (SELECTION_TYPE==0)
 		//FIXED RANK SELECTION
 		{
-			for (int i=0; i<POP_SIZE/2; i++){
+			#	pragma omp for
+			for (int i=0; i<POP_SIZE/2; i++)
+			{
 				int flip = rand()%2;
 				if (flip==0) offspring[i]=crossoverInj (p.pop[i+1], p.pop[i]); else
 						offspring[i]=crossoverPm (p.pop[i], p.pop[i+1]);
 			}
-	    } else if (SELECTION_TYPE==1)
+	        } else if (SELECTION_TYPE==1)
 		//TOURNAMENT SELECTION
 		{
+			#	pragma omp for
 			for (int i=0; i<POP_SIZE/2; i++)
 			{
+
 				for (int j=0; j<=TOURN_N; j++)
 				{
 					winners[j]=p.pop[rand()%(POP_SIZE)];
@@ -278,7 +244,7 @@ void evolve(Population &p)
 				//sort winners
 				while (c<SORT_LIMIT)
 				{
-					for (int l=0; l<TOURN_N - 1; l++)
+					for (int l=0; l<TOURN_N-1; l++)
 					{
 						if (fitness(winners[l]) > fitness(winners[l+1]))
 							{
@@ -300,16 +266,19 @@ void evolve(Population &p)
 
 		}
 		sort(p);
-		
 
-		for (int i=0; i<POP_SIZE/2; i++){
-			for (int j=0; j<POP_SIZE; j++){
-				if (fitness(offspring[i]) < fitness(p.pop[j]) && !inPop(p,offspring[i])){
-					p.pop[j]=offspring[i];
-					break;
+			#	pragma omp for
+			for (int i=0; i<POP_SIZE/2; i++)
+			{
+				for (int j=0; j<POP_SIZE/2; j++)
+				{
+					if (fitness(offspring[i]) < fitness(p.pop[j]))
+					{
+						p.pop[j]=offspring[i];
+
+					}
 				}
 			}
-		}
 
 
 
@@ -324,58 +293,69 @@ void evolve(Population &p)
 }
 
 
+int exist_in_map(int x,int y){
+	for (int i=0; i<CITIES; i++){
+		if (map[i].x==x && map[i].y==y){
+			return 1;
+		}
+	}
+	return 0;
+}
 
 // =============================================================================
 // MAIN
 
-int main()
+int main(int argc, char **argv)
 {
 	srand(time(NULL));
-    
-    City city;
-	city.x = 0;
-	city.y = 0;
+	//int thread_count=1;
+	// if (argc>1){
+	// 	thread_count = strtol(argv[1],NULL,10);
+	// }
 
-	for (int i = 0; i < V; i++)
-	{
+	City city;
+	city.x=0;
+	city.y=0;
+
+	for(int i=0; i<CITIES; i++){
 		city.name = i;
-		map[i] = city;
+		map[i]=city;
 	}
-
-	printf("CREATING MAP...\n");
-
-	for (int i = 0; i < V; i++)
-	{
-		map[i].x = rand();
-		map[i].y = rand();
+printf("CREATING MAP...\n");
+	for(int i=0; i<CITIES; i++){
+		//do{
+			map[i].x = rand();
+			map[i].y = rand();
+		//}while (exist_in_map(city.x,city.y));
 	}
 
 	printf("MAP CREATED!!\n");
-	//Population is created
+
 	Population population1;
 	Individual indi[POP_SIZE];
-	char ins;
-	clock_t start, end;
- 	/* Recording the starting clock tick.*/
-    start = clock();
-	//gnomes are filled with '0's for all individuals
+	int catalog[50];
+	int ins;
+	//#	pragma omp for
+	for (int i=1; i<=CITIES; i++) catalog[i]=i;
+
+
 	for (int k=0; k<POP_SIZE; k++)
 	{
-		for (int j=0; j<V; j++) indi[k].route[j]='0';
+		for (int j=0; j<CITIES; j++) indi[k].route[j]=-1;
 
 	}
 
-	//here is where the real initial population is created randomly
+
 	for (int k=0; k<POP_SIZE; k++)
 	{
-		while(inList (indi[k], '0'))
+		while(inList (indi[k], -1))
 		{
-			ins = rand()%(V + 1);
-			for (int j=0; j<V; j++){
-				if (!inList (indi[k], ins)) 
-					indi[k].route[getFreeIndex(indi[k])]=ins;
-			}
-				
+			printf("indi[%d].fitness: %d\n",k,indi[k].fitness);
+			//cout << endl << "indi[k]: " << indi[k] << endl;
+			ins = (rand()%(CITIES+1));
+			printf("ins: %d\n",ins);
+			//cout << endl <<"ins: "<< ins << endl;
+			for (int j=0; j<CITIES; j++) if (!inList (indi[k], ins)) indi[k].route[getFreeIndex(indi[k])]=ins;
 		}
 
 	}
@@ -386,15 +366,14 @@ int main()
 	cout << "Initial sorted population: " << endl;
 	printPop(population1);
 	cout << endl << "Starting evolution..." << endl << endl;
-	evolve(population1);
+	printf("N= %d with p = %d\n",CITIES,thread_count);
+	double stime = omp_get_wtime();
 
-    // Recording the end clock tick.
-    end = clock();
-  
-    // Calculating total time taken by the program.
-    double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-    cout << "Time taken by program is : " << fixed 
-         << time_taken ;
-    cout << " sec " << endl;
+	#	pragma omp parallel num_threads(thread_count)
+	evolve(population1);
+	double etime = omp_get_wtime();
+	printf("Evolution ended\n");
+	printf("N= %d with p = %d\n",CITIES,thread_count);
+	printf("TIME: %fs\n",(etime-stime));
 	return 0;
 }
