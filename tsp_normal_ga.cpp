@@ -26,6 +26,20 @@ bool inList(Individual a, int city)
 	return false;
 }
 
+//Function to determine if a sequence is already in the population
+bool inPop(Population &p, Individual a){
+	
+	for(int i = 0; i<POP_SIZE; i++){
+		if (equal(begin(p.pop[i].route), end(p.pop[i].route), begin(a.route), end(a.route))){
+			return true;
+		}else{
+			continue;
+		}
+	}
+	return false;
+
+}
+
 Individual crossoverPm (Individual a, Individual b)
 {
 	int x = rand()%CITIES;
@@ -263,7 +277,7 @@ void evolve(Population &p)
 			{
 				for (int j=0; j<POP_SIZE/2; j++)
 				{
-					if (fitness(offspring[i]) < fitness(p.pop[j]))
+					if (fitness(offspring[i]) < fitness(p.pop[j]) && !inPop(p,offspring[i]))
 					{
 						p.pop[j]=offspring[i];
 

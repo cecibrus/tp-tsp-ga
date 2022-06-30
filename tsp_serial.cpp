@@ -9,7 +9,7 @@ City map[V];
 //==============================================================================
 // PROTOTYPES
 
-bool inList(Individual a, char city);
+bool inList(Individual a, int city);
 Individual crossoverPm (Individual a, Individual b);
 void mutateW(Individual &a);
 void mutate(Individual &a);
@@ -23,7 +23,7 @@ void evolve(Population &p);
 // =============================================================================
 // EVOLUTION
 
-bool inList(Individual a, char city)
+bool inList(Individual a, int city)
 {
 	for (int n=0; n<V; n++) if (a.route[n]==city) return true;
 	return false;
@@ -57,12 +57,12 @@ Individual crossoverPm (Individual a, Individual b)
 	}
 
 	Individual c;
-	for (int n=0; n<V; n++) c.route[n]='0';
+	for (int n=0; n<V; n++) c.route[n]=-1;
 	for (int n=x; n<=y; n++) c.route[n]=a.route[n];
 
 		for (int i=0; i<V; i++)
 		{
-			if (c.route[i]=='0')
+			if (c.route[i]==-1)
 			{
 				for (int k=0; k<V; k++) if (!inList (c, a.route[k])) c.route[i]=a.route[k];
 			}
@@ -88,10 +88,10 @@ Individual crossoverInj (Individual a, Individual b)
 	}
 
 	Individual c;
-	for (int n=0; n<V; n++) c.route[n]='0';
+	for (int n=0; n<V; n++) c.route[n]=-1;
 
 	Individual ab;
-	for (int n=0; n<V; n++) ab.route[n]='0';
+	for (int n=0; n<V; n++) ab.route[n]=-1;
 	for (int n=x; n<=y; n++) ab.route[n]=a.route[n];
 
 	for (int n=0; n<=q; n++)
@@ -103,7 +103,7 @@ Individual crossoverInj (Individual a, Individual b)
 
 		for (int i=0; i<V; i++)
 		{
-			if (c.route[i]=='0')
+			if (c.route[i]==-1)
 			{
 				for (int k=0; k<V; k++) if (!inList (c, a.route[k])) c.route[i]=a.route[k];
 			}
@@ -225,7 +225,7 @@ int getFreeIndex(Individual a)
 {
 	for (int i=0; i<V; i++)
 	{
-		if (a.route[i]=='0') return i;
+		if (a.route[i]==-1) return i;
 	}
 	return -1;
 }
@@ -349,7 +349,7 @@ int main()
 		map[i].x = rand();
 		map[i].y = rand();
 	}
-
+	
 	printf("MAP CREATED!!\n");
 	//Population is created
 	Population population1;
@@ -358,17 +358,17 @@ int main()
 	clock_t start, end;
  	/* Recording the starting clock tick.*/
     start = clock();
-	//gnomes are filled with '0's for all individuals
+	//gnomes are filled with -1s for all individuals
 	for (int k=0; k<POP_SIZE; k++)
 	{
-		for (int j=0; j<V; j++) indi[k].route[j]='0';
+		for (int j=0; j<V; j++) indi[k].route[j]=-1;
 
 	}
 
 	//here is where the real initial population is created randomly
 	for (int k=0; k<POP_SIZE; k++)
 	{
-		while(inList (indi[k], '0'))
+		while(inList (indi[k], -1))
 		{
 			ins = rand()%(V + 1);
 			for (int j=0; j<V; j++){
